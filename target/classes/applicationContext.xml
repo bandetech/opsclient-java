@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans>
+   <bean id="opsServer" class="com.nuance.imaging.ops.opsclient.OmniPageServerInfo">
+      <property name="omnipageServer" value="10.120.0.165" />
+      <property name="omnipageServiceUrl">
+      	<value>/Nuance.OmniPage.Server.Service</value>
+      </property>
+   </bean>
+   
+   <bean id="serviceImpl" class="com.nuance.imaging.ops.opsclient.OPSServiceImpl">
+   		<property name="server">
+   			<ref bean="opsServer" />
+   		</property>
+   </bean>
+   <bean id="searchablePdfConversionParams" class="com.nuance.imaging.ops.opsclient.data.ConversionParameters">
+   		<property name="imageQuality" value="Better" />
+   		<property name="logicalFormRecognition" value="No" />
+   		<property name="language" value="LANG_JPN" />
+   		<property name="rotation" value="AUTO" />
+   		<property name="deskew" value="No" />
+   		<property name="tradeOff" value="Balanced" />
+   		<property name="pdfCompatibility" value="PDF1.6"/>
+   		<property name="cacheInputForReuse" value="True"/>
+   		<property name="layoutTradeOff" value="Accuracy" />
+   		<property name="cameraImage" value="No" />
+   </bean>
+   <bean id="sampleJobNotificationConf" class="com.nuance.imaging.ops.opsclient.data.JobNotificationConfiguration">
+   		<property name="completionNotifications">
+   			<list>
+   				<ref bean="sampleCompletionNotification" />
+   			</list>
+   		</property>
+   		<property name="failureNotifications">
+   			<list>
+   				<ref bean="sampleFailureNotification" />
+   			</list>
+   		</property>
+   </bean>
+   <bean id="sampleCompletionNotification" class="com.nuance.imaging.ops.opsclient.data.JobNotification">
+   		<property name="authenticationHeader" value="None"/>
+   		<property name="certificateSubject" value="None" />
+   		<property name="parameters" value="None" />
+   		<property name="serviceUrl" value="http://10.120.0.101:8000/Success" />
+   </bean>
+   <bean id="sampleFailureNotification" class="com.nuance.imaging.ops.opsclient.data.JobNotification">
+   		<property name="authenticationHeader" value="None"/>
+   		<property name="certificateSubject" value="None" />
+   		<property name="parameters" value="None" />
+   		<property name="serviceUrl" value="http://10.120.0.101:8000/Failure" />
+   </bean>
+</beans>
