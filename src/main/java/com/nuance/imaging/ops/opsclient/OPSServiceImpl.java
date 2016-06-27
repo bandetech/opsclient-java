@@ -13,7 +13,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -49,7 +48,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.simpleframework.xml.Serializer;
 import org.simpleframework.xml.core.Persister;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -72,25 +70,20 @@ public class OPSServiceImpl implements OPSService {
 	
 	private OmniPageServerInfo server;
 	private HttpClient httpClient = null;
-
+	private static final int socketTimeOut = 90000;
+	private static final int connectionTimeOut = 180000;
+	private static final String USER_AGENT = "Nuance OPS Client 0.1";
+	
 	Logger logger = LogManager.getLogger(OPSServiceImpl.class);
 
 	public OPSServiceImpl(){
-		int socketTimeOut = 90000;
-		int connectionTimeOut = 180000;
-		final String USER_AGENT = "Nuance OPS Client 0.1";
 		
 		RequestConfig requestConfig = RequestConfig.custom()
 				.setConnectionRequestTimeout(connectionTimeOut)
 				.setSocketTimeout(socketTimeOut)
 				.build();
 
-		List<Header> headers = new ArrayList<Header>();
-		headers.add(new BasicHeader("Accept", "application/json"));
-		//headers.add(new BasicHeader("Content-Type", "application/json"));
-		headers.add(new BasicHeader("Accept-Charset", "utf-8"));
-		//headers.add(new BasicHeader("Accept-Language", "ja, en;q=0.8"));
-		headers.add(new BasicHeader("User-Agent", USER_AGENT));
+		List<Header> headers = buildHeader();
 		
 		httpClient = HttpClientBuilder.create()
 				.setDefaultRequestConfig(requestConfig)
@@ -98,13 +91,9 @@ public class OPSServiceImpl implements OPSService {
 
 		logger.debug("Initialize OPSServiceImpl....");
 
-
 	}
 	
 	public OPSServiceImpl(String username, String password, String workstation, String domain){
-		int socketTimeOut = 90000;
-		int connectionTimeOut = 180000;
-		final String USER_AGENT = "Nuance OPS Client 0.1";
 		
 		RequestConfig requestConfig = RequestConfig.custom()
 				.setConnectionRequestTimeout(connectionTimeOut)
@@ -112,12 +101,7 @@ public class OPSServiceImpl implements OPSService {
 				.setSocketTimeout(socketTimeOut)
 				.build();
 		
-		List<Header> headers = new ArrayList<Header>();
-		headers.add(new BasicHeader("Accept", "application/json"));
-		//headers.add(new BasicHeader("Content-Type", "application/json"));
-		headers.add(new BasicHeader("Accept-Charset", "utf-8"));
-		//headers.add(new BasicHeader("Accept-Language", "ja, en;q=0.8"));
-		headers.add(new BasicHeader("User-Agent", USER_AGENT));
+		List<Header> headers = buildHeader();
 		
 		CredentialsProvider cp = new BasicCredentialsProvider();
 		cp.setCredentials(AuthScope.ANY, new NTCredentials(username, password, workstation, domain));
@@ -134,7 +118,16 @@ public class OPSServiceImpl implements OPSService {
 		logger.debug("Initialize OPSServiceImpl with Authentication....");
 	}
 	
-
+	private List<Header> buildHeader(){
+		List<Header> headers = new ArrayList<Header>();
+		headers.add(new BasicHeader("Accept", "application/json"));
+		//headers.add(new BasicHeader("Content-Type", "application/json"));
+		headers.add(new BasicHeader("Accept-Charset", "utf-8"));
+		//headers.add(new BasicHeader("Accept-Language", "ja, en;q=0.8"));
+		headers.add(new BasicHeader("User-Agent", USER_AGENT));
+		
+		return headers;
+	}
 
 	public List<JobType> getJobTypes(){
 		String data = sendRequest(GET_JOB_TYPES_URI, null);
@@ -242,6 +235,7 @@ public class OPSServiceImpl implements OPSService {
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	private <T extends Object> List<T> jsonArrayToList(final String jsonStr, final Class<T> clazz){
 		final ObjectMapper mapper = new ObjectMapper();
 		final CollectionType ct = mapper.getTypeFactory().constructCollectionType(List.class, clazz);
@@ -274,11 +268,12 @@ public class OPSServiceImpl implements OPSService {
 
 	}
 	
+
 	private String sendRequest(final String jobUri, final List<NameValuePair> urlParams, final String method){
 		
 		String url;
 		if(urlParams != null){
-			String queryString = URLEncodedUtils.format(urlParams, Charsets.UTF_8);
+			String queryString = URLEncodedUtils.format(urlParams, StandardCharsets.UTF_8);
 
 			url = new StringBuilder(server.getJobUrlBase())
 				.append(jobUri)
