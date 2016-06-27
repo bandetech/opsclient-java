@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -19,16 +20,26 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
+import org.apache.http.auth.AuthSchemeProvider;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.NTCredentials;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URLEncodedUtils;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
 
+import org.apache.http.impl.auth.NTLMSchemeFactory;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClientBuilder;
+
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.entity.StringEntity;
@@ -46,6 +57,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
+
 import com.nuance.imaging.ops.opsclient.data.ConversionParameters;
 import com.nuance.imaging.ops.opsclient.data.JobDataDescription;
 import com.nuance.imaging.ops.opsclient.data.JobInfo;
@@ -57,7 +69,7 @@ import com.nuance.imaging.ops.opsclient.util.TicksSinceFormat;
 
 @Component
 public class OPSServiceImpl implements OPSService {
-	@Autowired
+	
 	private OmniPageServerInfo server;
 	private HttpClient httpClient = null;
 
@@ -67,7 +79,7 @@ public class OPSServiceImpl implements OPSService {
 		int socketTimeOut = 90000;
 		int connectionTimeOut = 180000;
 		final String USER_AGENT = "Nuance OPS Client 0.1";
-
+		
 		RequestConfig requestConfig = RequestConfig.custom()
 				.setConnectionRequestTimeout(connectionTimeOut)
 				.setSocketTimeout(socketTimeOut)
@@ -79,7 +91,7 @@ public class OPSServiceImpl implements OPSService {
 		headers.add(new BasicHeader("Accept-Charset", "utf-8"));
 		//headers.add(new BasicHeader("Accept-Language", "ja, en;q=0.8"));
 		headers.add(new BasicHeader("User-Agent", USER_AGENT));
-
+		
 		httpClient = HttpClientBuilder.create()
 				.setDefaultRequestConfig(requestConfig)
 				.setDefaultHeaders(headers).build();
@@ -88,6 +100,41 @@ public class OPSServiceImpl implements OPSService {
 
 
 	}
+	
+	public OPSServiceImpl(String username, String password, String workstation, String domain){
+		int socketTimeOut = 90000;
+		int connectionTimeOut = 180000;
+		final String USER_AGENT = "Nuance OPS Client 0.1";
+		
+		RequestConfig requestConfig = RequestConfig.custom()
+				.setConnectionRequestTimeout(connectionTimeOut)
+				.setTargetPreferredAuthSchemes(Arrays.asList(AuthSchemes.NTLM, AuthSchemes.KERBEROS, AuthSchemes.SPNEGO))
+				.setSocketTimeout(socketTimeOut)
+				.build();
+		
+		List<Header> headers = new ArrayList<Header>();
+		headers.add(new BasicHeader("Accept", "application/json"));
+		//headers.add(new BasicHeader("Content-Type", "application/json"));
+		headers.add(new BasicHeader("Accept-Charset", "utf-8"));
+		//headers.add(new BasicHeader("Accept-Language", "ja, en;q=0.8"));
+		headers.add(new BasicHeader("User-Agent", USER_AGENT));
+		
+		CredentialsProvider cp = new BasicCredentialsProvider();
+		cp.setCredentials(AuthScope.ANY, new NTCredentials(username, password, workstation, domain));
+		Registry<AuthSchemeProvider> r = RegistryBuilder.<AuthSchemeProvider>create()
+				.register(AuthSchemes.NTLM, new NTLMSchemeFactory())
+				.build();
+		
+		httpClient = HttpClientBuilder.create()
+				.setDefaultRequestConfig(requestConfig)
+				.setDefaultCredentialsProvider(cp)
+				.setDefaultAuthSchemeRegistry(r)
+				.setDefaultHeaders(headers).build();
+
+		logger.debug("Initialize OPSServiceImpl with Authentication....");
+	}
+	
+
 
 	public List<JobType> getJobTypes(){
 		String data = sendRequest(GET_JOB_TYPES_URI, null);
@@ -268,6 +315,13 @@ public class OPSServiceImpl implements OPSService {
 					String data = outputStream.toString();
 
 					return data;
+				case HttpStatus.SC_UNAUTHORIZED:
+					logger.error("Authentication Failed (HTTP 401)");
+					Header respHeaders[] = response.getAllHeaders();
+					for(Header header:respHeaders){
+						logger.error(header.getName()+":"+header.getValue());
+					}
+					
 				case HttpStatus.SC_NO_CONTENT:
 					return "No Content from Server (HTTP204)";
 
