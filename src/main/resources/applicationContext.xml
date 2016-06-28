@@ -2,7 +2,7 @@
 <!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
 <beans>
    <bean id="opsServer" class="com.nuance.imaging.ops.opsclient.OmniPageServerInfo">
-      <property name="omnipageServer" value="192.168.37.138" />
+      <property name="omnipageServer" value="YOUR OMNIPAGE SERVER ADDRESS" />
       <property name="omnipageServiceUrl">
       	<value>/Nuance.OmniPage.Server.Service</value>
       </property>
@@ -18,10 +18,10 @@
    		<property name="server">
    			<ref bean="opsServer" />
    		</property>
-   		<constructor-arg type="java.lang.String" value="dmadmin"/>
-   		<constructor-arg type="java.lang.String" value="d3m04doc"/>
-   		<constructor-arg type="java.lang.String" value="192.168.37.138"/>
-   		<constructor-arg type="java.lang.String" value="none" />
+   		<constructor-arg type="java.lang.String" value="USERNAME"/>
+   		<constructor-arg type="java.lang.String" value="PASSWORD"/>
+   		<constructor-arg type="java.lang.String" value="HOST TO REQUEST AUTHENTICATION"/>
+   		<constructor-arg type="java.lang.String" value="DOMAIN NAME" />
    </bean>
    
    <bean id="searchablePdfConversionParams" class="com.nuance.imaging.ops.opsclient.data.ConversionParameters">
