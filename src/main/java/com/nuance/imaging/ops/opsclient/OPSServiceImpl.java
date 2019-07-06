@@ -195,6 +195,7 @@ public class OPSServiceImpl implements OPSService {
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	private <T extends Object> List<T> jsonArrayToList(final String jsonStr, final Class<T> clazz){
 		final ObjectMapper mapper = new ObjectMapper();
 		final CollectionType ct = mapper.getTypeFactory().constructCollectionType(List.class, clazz);
