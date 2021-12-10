@@ -35,3 +35,8 @@ bin
 *.log
 *.swp
 *.bak
+
+# VSCide
+.factorypath
+.vscode
+
